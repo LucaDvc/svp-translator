@@ -1,0 +1,15 @@
+services:
+  svp-translator:
+    build: .
+    container_name: svp-translator
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Mount your local config override
+      - ./config_local.py:/app/config_local.py:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

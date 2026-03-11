@@ -1,0 +1,29 @@
+"""
+Local configuration — fill in your actual values here.
+This file overrides config.py and is NOT committed to git.
+"""
+
+from config import *  # noqa: import all defaults
+
+# === FILL THESE IN ===
+
+# Your Telegram bot token from @BotFather
+TELEGRAM_BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"
+
+# Source channel ID (where Russian .docx files are posted)
+# To find this: forward a message from the channel to @userinfobot or @getidsbot
+SOURCE_CHANNEL_ID = -100_REPLACE_ME
+
+# Target channel ID (where English translations will be posted)
+TARGET_CHANNEL_ID = -100_REPLACE_ME
+
+# Your Anthropic API key
+ANTHROPIC_API_KEY = "sk-ant-REPLACE_ME"
+
+# === OPTIONAL OVERRIDES ===
+# Uncomment and modify any of these to override defaults from config.py
+
+# MODEL = "claude-sonnet-4-6"
+# CHUNK_SIZE_WORDS = 1500
+# USE_BATCH_API = False
+# LOG_LEVEL = "DEBUG"  # Set to DEBUG for troubleshooting
