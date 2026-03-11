@@ -54,6 +54,7 @@ CRITICAL TERMINOLOGY — always use these exact translations:
 - системно-векторная психология → System-vector psychology (NOT "systematic-vector psychology")
 - кожно-зрительная → dermal-visual
 - кожный звуковик → dermal auditory person
+- чувственное развитие → emotional development (NOT "sensory development"); чувственная сфера → emotional sphere; чувственный отклик → emotional response (from чувства = feelings/emotions, not senses)
 
 TRANSLATION RULES:
 1. Produce natural, flowing English understandable by an average European citizen.
