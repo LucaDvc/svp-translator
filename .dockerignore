@@ -1,0 +1,8 @@
+config_local.py
+.env
+__pycache__
+*.pyc
+.git
+.gitignore
+.dockerignore
+README.md

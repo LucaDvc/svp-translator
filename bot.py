@@ -25,7 +25,6 @@ from assembler import (
     generate_output_filename,
 )
 
-# Import config — try local override first, then default
 try:
     import config_local as config
 except ImportError:

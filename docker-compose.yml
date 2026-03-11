@@ -1,13 +1,19 @@
 services:
   svp-translator:
+    env_file: .env
     build: .
     container_name: svp-translator
     restart: unless-stopped
     environment:
       - PYTHONUNBUFFERED=1
-    volumes:
-      # Mount your local config override
-      - ./config_local.py:/app/config_local.py:ro
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - SOURCE_CHANNEL_ID=${SOURCE_CHANNEL_ID}
+      - TARGET_CHANNEL_ID=${TARGET_CHANNEL_ID}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - MODEL=${MODEL:-claude-sonnet-4-6}
+      - CHUNK_SIZE_WORDS=${CHUNK_SIZE_WORDS:-1500}
+      - USE_BATCH_API=${USE_BATCH_API:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     logging:
       driver: json-file
       options:

@@ -1,27 +1,32 @@
 """
 Configuration for SVP Translator Bot.
-Copy this file to config_local.py and fill in your actual values.
+
+Values are read from environment variables when available (for Docker deployment),
+falling back to defaults otherwise. For local development, create a config_local.py
+to override these values.
 """
 
+import os
+
 # === Telegram Settings ===
-TELEGRAM_BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
 
 # Channel where Russian .docx files are posted
 # To get a channel ID: forward a message from the channel to @userinfobot
 # Channel IDs are negative numbers, e.g. -1001234567890
-SOURCE_CHANNEL_ID = -100_REPLACE_ME
+SOURCE_CHANNEL_ID = int(os.environ.get("SOURCE_CHANNEL_ID", -1))
 
 # Channel where English translations are posted
-TARGET_CHANNEL_ID = -100_REPLACE_ME
+TARGET_CHANNEL_ID = int(os.environ.get("TARGET_CHANNEL_ID", -1))
 
 # === Anthropic API Settings ===
-ANTHROPIC_API_KEY = "YOUR_ANTHROPIC_API_KEY_HERE"
-MODEL = "claude-sonnet-4-6"
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "YOUR_ANTHROPIC_API_KEY_HERE")
+MODEL = os.environ.get("MODEL", "claude-sonnet-4-6")
 
 # === Translation Settings ===
 # Approximate number of words per chunk (Russian text).
 # ~1500 words ≈ 5 pages. Adjust if you want bigger/smaller chunks.
-CHUNK_SIZE_WORDS = 1500
+CHUNK_SIZE_WORDS = int(os.environ.get("CHUNK_SIZE_WORDS", 1500))
 
 # The system prompt for translation, based on your proven prompt.
 TRANSLATION_SYSTEM_PROMPT = """You are an expert translator from Russian to English, specializing in psychological terminology.
@@ -87,20 +92,11 @@ Do NOT add any preamble like "Here is the corrected translation:" — just outpu
 # === Batch API Settings ===
 # Use batch API for cheaper processing (50% off, but up to 24h wait).
 # Set to False for immediate processing (costs 2x more but instant).
-USE_BATCH_API = True  # Recommended: False for reasonable speed; True to save money
+USE_BATCH_API = os.environ.get("USE_BATCH_API", "true").lower() in ("true", "1", "yes")
 
 # Maximum wait time for batch API results (seconds)
-BATCH_TIMEOUT = 3600  # 1 hour
+BATCH_TIMEOUT = int(os.environ.get("BATCH_TIMEOUT", 3600))
 
 # === Logging ===
-LOG_LEVEL = "INFO"
-
-
-# === OPTIONAL OVERRIDES ===
-# Uncomment and modify any of these to override defaults from config.py
-
-# MODEL = "claude-sonnet-4-6"
-# CHUNK_SIZE_WORDS = 1500
-# USE_BATCH_API = False
-# LOG_LEVEL = "DEBUG"  # Set to DEBUG for troubleshooting
+LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 
