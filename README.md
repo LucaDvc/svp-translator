@@ -92,32 +92,68 @@ pip install -r requirements.txt
 python bot.py
 ```
 
-## Deploying on a VPS (Hetzner)
+## Deploying on a VPS (Hetzner) with GitHub Actions
 
-1. Create a Hetzner Cloud account at https://www.hetzner.com/cloud
+Every push to `main` automatically builds a new Docker image and deploys it to your VPS. Here's how to set it up.
+
+### 1. Create the VPS
+
+1. Create a Hetzner Cloud account
 2. Create a **CAX11** server (ARM, €3.29/month) with Ubuntu 24.04
-3. SSH in and run:
+3. Add your SSH public key during server creation
+
+### 2. Prepare the VPS (one-time)
+
+SSH into the server and install Docker:
 
 ```bash
-# Install Docker
 curl -fsSL https://get.docker.com | sh
-
-# Clone or copy your project
-mkdir svp-translator && cd svp-translator
-# (copy all project files here, or use git)
-
-# Create your config
-cp config_local.py.template config_local.py
-nano config_local.py  # fill in your values
-
-# Start the bot
-docker compose up -d
-
-# Verify it's running
-docker compose logs -f
 ```
 
-The bot will now run 24/7 and auto-restart on reboot.
+Authenticate with GitHub Container Registry so the server can pull your image.
+Generate a GitHub personal access token with `read:packages` scope at
+`GitHub → Settings → Developer settings → Personal access tokens`, then:
+
+```bash
+echo YOUR_GITHUB_TOKEN | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+```
+
+That's it — the deploy action will handle everything else (creating directories, writing the `.env`, pulling the image).
+
+### 3. Add GitHub Secrets
+
+Go to your repo → **Settings → Secrets and variables → Actions**.
+
+Under the **Secrets** tab, add:
+
+| Secret | Value |
+|---|---|
+| `VPS_HOST` | Your server's IP address |
+| `VPS_USER` | `root` (or your SSH user) |
+| `VPS_SSH_KEY` | Your SSH private key (contents of `~/.ssh/id_rsa`) |
+| `TELEGRAM_BOT_TOKEN` | Bot token from @BotFather |
+| `SOURCE_CHANNEL_ID` | Channel ID where Russian `.docx` files are posted |
+| `TARGET_CHANNEL_ID` | Channel ID where translations are posted |
+| `ANTHROPIC_API_KEY` | Your Anthropic API key |
+
+Under the **Variables** tab, add:
+
+| Variable | Default | Description |
+|---|---|---|
+| `MODEL` | `claude-sonnet-4-6` | Anthropic model to use |
+| `CHUNK_SIZE_WORDS` | `1500` | Words per translation chunk |
+| `USE_BATCH_API` | `true` | `true` = 50% cheaper, up to 1hr wait; `false` = instant |
+| `LOG_LEVEL` | `INFO` | `DEBUG` for troubleshooting |
+
+### 4. Deploy
+
+Push to `main` — the action will build the image, push it to `ghcr.io`, and restart the container on your VPS. Check progress under the **Actions** tab in your repo.
+
+To check logs on the VPS at any time:
+
+```bash
+docker logs svp-translator -f
+```
 
 ## Bot Commands
 
