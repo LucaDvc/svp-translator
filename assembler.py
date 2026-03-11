@@ -47,10 +47,11 @@ def build_translated_docx(
     Build a clean .docx from translated text.
 
     Formatting rules:
-    - Single blank line between paragraphs
-    - Timestamps on their own line
+    - No empty lines between paragraphs — Word paragraph spacing handles the gap
+    - When copy-pasted to a forum, each paragraph becomes its own block with
+      natural spacing, so no extra blank lines are needed in the source
+    - Timestamps on their own line, bold
     - Clean, readable font (Calibri 11pt)
-    - No excessive spacing
     """
     output_path = Path(output_path)
     doc = Document()
@@ -61,13 +62,14 @@ def build_translated_docx(
     font.name = "Calibri"
     font.size = Pt(11)
 
-    # Set paragraph spacing to 0 (we control spacing via blank lines)
+    # Paragraph spacing — Word handles visual gaps between paragraphs.
+    # No empty lines needed in the text itself.
     paragraph_format = style.paragraph_format
     paragraph_format.space_before = Pt(0)
-    paragraph_format.space_after = Pt(6)
+    paragraph_format.space_after = Pt(8)
     paragraph_format.line_spacing = 1.15
 
-    # Split into paragraphs and add to document
+    # Split into paragraphs and add to document, skipping empty lines
     lines = translated_text.split("\n")
     timestamp_pattern = re.compile(r"^\d{2}[.:]\d{2}[.:]\d{2,3}$")
 
@@ -75,13 +77,10 @@ def build_translated_docx(
         stripped = line.strip()
 
         if not stripped:
-            # Empty line — add an empty paragraph for spacing
-            doc.add_paragraph("")
-            continue
+            continue  # Skip empty lines — paragraph spacing handles the gap
 
         para = doc.add_paragraph()
 
-        # Style timestamps slightly differently (bold)
         if timestamp_pattern.match(stripped):
             run = para.add_run(stripped)
             run.bold = True
