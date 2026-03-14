@@ -4,6 +4,7 @@ and posts the translation to the target channel.
 """
 
 import asyncio
+import json
 import logging
 import os
 import tempfile
@@ -32,6 +33,27 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+# --- Deduplication ---
+PROCESSED_IDS_FILE = Path(os.environ.get("PROCESSED_IDS_FILE", "processed_files.json"))
+_in_progress: set[str] = set()  # IDs currently being translated
+
+
+def _load_processed_ids() -> set[str]:
+    """Load the set of already-processed file_unique_ids from disk."""
+    if PROCESSED_IDS_FILE.exists():
+        try:
+            return set(json.loads(PROCESSED_IDS_FILE.read_text()))
+        except (json.JSONDecodeError, TypeError):
+            logger.warning("Corrupt processed-IDs file, starting fresh")
+    return set()
+
+
+def _save_processed_id(file_unique_id: str) -> None:
+    """Append a file_unique_id to the persisted set."""
+    ids = _load_processed_ids()
+    ids.add(file_unique_id)
+    PROCESSED_IDS_FILE.write_text(json.dumps(list(ids)))
+
 
 async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle incoming documents in the source channel."""
@@ -55,6 +77,13 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.debug(f"Skipping file from non-source channel: {chat_id}")
         return
 
+    # Deduplication: skip files we've already translated or are translating now
+    file_unique_id = message.document.file_unique_id
+    if file_unique_id in _in_progress or file_unique_id in _load_processed_ids():
+        logger.debug(f"Skipping already-processed file: {filename} ({file_unique_id})")
+        return
+
+    _in_progress.add(file_unique_id)
     logger.info(f"New .docx detected: {filename}")
 
     # Work in a temp directory
@@ -108,9 +137,11 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     caption=caption,
                 )
 
+            _save_processed_id(file_unique_id)
             logger.info(f"Successfully translated and posted: {output_filename}")
 
         except Exception as e:
+            _in_progress.discard(file_unique_id)
             logger.error(f"Error processing {filename}: {e}", exc_info=True)
 
 
