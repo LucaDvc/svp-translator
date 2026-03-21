@@ -36,6 +36,7 @@ logger = logging.getLogger(__name__)
 # --- Deduplication ---
 PROCESSED_IDS_FILE = Path(os.environ.get("PROCESSED_IDS_FILE", "processed_files.json"))
 _in_progress: set[str] = set()  # IDs currently being translated
+_last_failed: dict | None = None  # Info about the last failed job for /retry
 
 
 def _load_processed_ids() -> set[str]:
@@ -142,6 +143,11 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         except Exception as e:
             _in_progress.discard(file_unique_id)
+            _last_failed = {
+                "file_id": message.document.file_id,
+                "filename": filename,
+                "file_unique_id": file_unique_id,
+            }
             logger.error(f"Error processing {filename}: {e}", exc_info=True)
 
 
@@ -161,6 +167,69 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"Batch mode: {'ON' if config.USE_BATCH_API else 'OFF'}\n"
         f"Chunk size: {config.CHUNK_SIZE_WORDS} words"
     )
+
+
+async def cmd_retry(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Retry the last failed automatic translation."""
+    global _last_failed
+    message = update.message
+    if not message:
+        return
+
+    if not _last_failed:
+        await message.reply_text("No failed translation to retry.")
+        return
+
+    filename = _last_failed["filename"]
+    file_id = _last_failed["file_id"]
+    file_unique_id = _last_failed["file_unique_id"]
+
+    await message.reply_text(f"Retrying translation of {filename}...")
+
+    _in_progress.add(file_unique_id)
+    _last_failed = None
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        try:
+            input_path = Path(tmpdir) / filename
+            file = await context.bot.get_file(file_id)
+            await file.download_to_drive(str(input_path))
+
+            russian_text = extract_text_from_docx(input_path)
+            translated_text = translate_and_review(
+                text=russian_text,
+                anthropic_api_key=config.ANTHROPIC_API_KEY,
+                model=config.MODEL,
+                translation_prompt=config.TRANSLATION_SYSTEM_PROMPT,
+                qa_prompt=config.QA_SYSTEM_PROMPT,
+                chunk_size_words=config.CHUNK_SIZE_WORDS,
+                use_batch=config.USE_BATCH_API,
+                batch_timeout=config.BATCH_TIMEOUT,
+            )
+
+            output_filename = generate_output_filename(filename)
+            output_path = Path(tmpdir) / output_filename
+            build_translated_docx(translated_text, output_path, filename)
+
+            caption = _make_caption(output_filename)
+            with open(output_path, "rb") as f:
+                await context.bot.send_document(
+                    chat_id=config.TARGET_CHANNEL_ID,
+                    document=f,
+                    filename=output_filename,
+                    caption=caption,
+                )
+
+            _save_processed_id(file_unique_id)
+            _in_progress.discard(file_unique_id)
+            await message.reply_text(f"✅ Retry succeeded: {output_filename}")
+            logger.info(f"Retry succeeded: {output_filename}")
+
+        except Exception as e:
+            _in_progress.discard(file_unique_id)
+            _last_failed = {"file_id": file_id, "filename": filename, "file_unique_id": file_unique_id}
+            await message.reply_text(f"Retry failed: {e}")
+            logger.error(f"Retry failed for {filename}: {e}", exc_info=True)
 
 
 async def cmd_translate_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -246,6 +315,7 @@ def main():
 
     # Commands (for DM / group interaction with the bot)
     app.add_handler(CommandHandler("status", cmd_status))
+    app.add_handler(CommandHandler("retry", cmd_retry))
     app.add_handler(CommandHandler("translate", cmd_translate_file))
 
     logger.info(
