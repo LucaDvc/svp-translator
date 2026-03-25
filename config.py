@@ -55,6 +55,28 @@ CRITICAL TERMINOLOGY — always use these exact translations:
 - кожно-зрительная → dermal-visual
 - кожный звуковик → dermal auditory person
 - чувственное развитие → emotional development (NOT "sensory development"); чувственная сфера → emotional sphere; чувственный отклик → emotional response (from чувства = feelings/emotions, not senses)
+- надменность (olfactory vector context) → disdain
+- сокращение (as in сокращение Света) → contraction (e.g. contraction of Light)
+- Брачевание → courtship or matchmaking (depending on context)
+- вслушиваться → strain your ears
+- Таблица Менделеева → periodic table
+- свои и чужие → friends and aliens
+- When a subject relates to a vector (e.g. "Математика — это звуковой вектор"), translate with "about": "Mathematics is about the auditory vector"
+- For vector combinations, use "combination" (NOT "pairing" or "blending"). E.g. "anal-visual combination", "Combinations of the vectors" (NOT "Blending of Vectors")
+
+IDIOM AND PHRASE GLOSSARY — use these specific translations:
+- кнут и пряник → the carrot and the stick (NOT "whip and carrot" or "the whip")
+- заедать стресс / заедающий стресс → a stress eater / stress eating
+- на тебе, боже, что нам негоже → a thing you don't want is dear at any price
+- путать божий дар с яичницей → compare apples to oranges
+- печки-лавочки → nothing in particular
+- голод не тётка → hunger is no joke
+- медведь на ухо наступил → tone deaf
+- на фоне чего-то → amid
+- абонемент (на полный год) → a (full-year) pass (NOT "subscription")
+- распространение (влияния) → spread (NOT "dissemination" — dissemination is for information only)
+- "Истина в другом" / "The truth lies elsewhere" → "The truth is in another one"
+- "Я и все остальные" → "Me and all the others" (use "Me" not "I")
 
 TRANSLATION RULES:
 1. Produce natural, flowing English understandable by an average European citizen.
@@ -64,9 +86,10 @@ TRANSLATION RULES:
 5. Preserve the conversational lecture tone of the original.
 6. "Чат:" → "Chat:" and "Ответ:" → "Answer:"
 7. Preserve names in their standard English transliteration (e.g. Юрий → Yury).
-8. Translate Russian idioms into natural English equivalents where possible.
+8. Translate Russian idioms into natural English equivalents. Refer to the Idiom and Phrase Glossary above for mandated translations.
 9. "СВО (Специальная военная операция)" → "SMO (Special Military Operation)" on first occurrence, then just "SMO".
 10. "патрица и матрица" → "patrix and matrix" (mold-casting metaphor), NOT "patria and matria".
+11. Prefer "should" over "must" for a softer tone, unless "must" is clearly required by context.
 """
 
 # The system prompt for QA review
@@ -79,7 +102,7 @@ You will receive:
 Check for and fix these issues:
 1. UNTRANSLATED WORDS: Any Cyrillic characters remaining in the English text. This is the #1 priority. Every Russian word MUST be translated.
 2. MEANING ACCURACY: Does the English accurately convey the Russian meaning? Flag and fix any reversals, omissions, or distortions.
-3. TERMINOLOGY: Verify correct use of System-vector psychology terms (auditory vector, dermal vector, etc. — NOT "sound vector", "skin vector", etc.)
+3. TERMINOLOGY: Verify correct use of System-vector psychology terms (auditory vector, dermal vector, etc. — NOT "sound vector", "skin vector", etc.). Also verify idiom translations match the glossary (e.g. "the carrot and the stick" not "whip", "combination" not "pairing" for vectors, "should" not "must" for soft tone).
 4. TIMESTAMPS: Must be preserved exactly.
 5. COMPLETENESS: No sentences or paragraphs should be omitted.
 6. FLUENCY: The English should read naturally.
