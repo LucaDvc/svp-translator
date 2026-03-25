@@ -161,6 +161,7 @@ Send these to the bot in a direct message:
 
 - `/status` — Check if the bot is running and see current settings
 - `/translate` — Reply to any `.docx` message with this command to manually trigger translation
+- `/retry` — Retry the last failed automatic translation
 
 ## Configuration Options
 
