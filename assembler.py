@@ -42,16 +42,18 @@ def build_translated_docx(
     translated_text: str,
     output_path: str | Path,
     source_filename: str = "",
+    header_info: dict | None = None,
 ) -> Path:
     """
     Build a clean .docx from translated text.
 
     Formatting rules:
+    - Header: lesson title, date, part — separated by soft line breaks (no spacing)
     - No empty lines between paragraphs — Word paragraph spacing handles the gap
-    - When copy-pasted to a forum, each paragraph becomes its own block with
-      natural spacing, so no extra blank lines are needed in the source
     - Timestamps on their own line, bold
     - Clean, readable font (Calibri 11pt)
+
+    header_info: dict with keys "title", "date", "part" (e.g. from AI extraction)
     """
     output_path = Path(output_path)
     doc = Document()
@@ -68,6 +70,16 @@ def build_translated_docx(
     paragraph_format.space_before = Pt(0)
     paragraph_format.space_after = Pt(8)
     paragraph_format.line_spacing = 1.15
+
+    # Add file header from AI-extracted metadata
+    if header_info:
+        header_para = doc.add_paragraph()
+        header_para.paragraph_format.space_after = Pt(12)
+        header_para.add_run(header_info["title"])
+        header_para.add_run().add_break()
+        header_para.add_run(header_info["date"])
+        header_para.add_run().add_break()
+        header_para.add_run(header_info["part"])
 
     # Split into paragraphs and add to document, skipping empty lines
     lines = translated_text.split("\n")

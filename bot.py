@@ -19,7 +19,8 @@ from telegram.ext import (
     filters,
 )
 
-from translator import translate_and_review
+from translator import translate_and_review, extract_header_info
+import anthropic
 from assembler import (
     extract_text_from_docx,
     build_translated_docx,
@@ -118,10 +119,14 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 batch_timeout=config.BATCH_TIMEOUT,
             )
 
+            # Extract header info from Russian source text
+            header_client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+            header_info = extract_header_info(header_client, russian_text, config.MODEL)
+
             # Build output .docx
             output_filename = generate_output_filename(filename)
             output_path = Path(tmpdir) / output_filename
-            build_translated_docx(translated_text, output_path, filename)
+            build_translated_docx(translated_text, output_path, output_filename, header_info)
 
             # Post to target channel
             logger.info(f"Posting {output_filename} to target channel...")
@@ -207,9 +212,12 @@ async def cmd_retry(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 batch_timeout=config.BATCH_TIMEOUT,
             )
 
+            header_client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+            header_info = extract_header_info(header_client, russian_text, config.MODEL)
+
             output_filename = generate_output_filename(filename)
             output_path = Path(tmpdir) / output_filename
-            build_translated_docx(translated_text, output_path, filename)
+            build_translated_docx(translated_text, output_path, output_filename, header_info)
 
             caption = _make_caption(output_filename)
             with open(output_path, "rb") as f:
@@ -272,9 +280,12 @@ async def cmd_translate_file(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 batch_timeout=config.BATCH_TIMEOUT,
             )
 
+            header_client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+            header_info = extract_header_info(header_client, russian_text, config.MODEL)
+
             output_filename = generate_output_filename(filename)
             output_path = Path(tmpdir) / output_filename
-            build_translated_docx(translated_text, output_path, filename)
+            build_translated_docx(translated_text, output_path, output_filename, header_info)
 
             caption = _make_caption(output_filename)
 

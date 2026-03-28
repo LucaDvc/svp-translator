@@ -90,6 +90,7 @@ TRANSLATION RULES:
 9. "СВО (Специальная военная операция)" → "SMO (Special Military Operation)" on first occurrence, then just "SMO".
 10. "патрица и матрица" → "patrix and matrix" (mold-casting metaphor), NOT "patria and matria".
 11. Prefer "should" over "must" for a softer tone, unless "must" is clearly required by context.
+12. "ТЗ" is short for "тематическое занятие" → "themed training" or "themed session". Do NOT translate as "TZ" or "technical task".
 """
 
 # The system prompt for QA review

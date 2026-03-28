@@ -12,6 +12,88 @@ import re
 logger = logging.getLogger(__name__)
 
 
+def extract_header_info(
+    client: anthropic.Anthropic,
+    russian_text: str,
+    model: str,
+) -> dict | None:
+    """
+    Extract lesson header info (title, date, part) from the beginning of Russian text.
+    Returns dict with keys "title", "date", "part", or None if extraction fails.
+    """
+    # Only send the first ~300 words to keep this cheap
+    words = russian_text.split()
+    preview = " ".join(words[:300])
+
+    try:
+        response = client.messages.create(
+            model=model,
+            max_tokens=256,
+            system=[
+                {
+                    "type": "text",
+                    "text": (
+                        "You extract metadata from Russian lecture transcripts about "
+                        "System-vector psychology (системно-векторная психология). "
+                        "Return ONLY valid JSON, no other text."
+                    ),
+                }
+            ],
+            messages=[
+                {
+                    "role": "user",
+                    "content": (
+                        "Extract the lesson title, date, and part number from this text.\n\n"
+                        "The lesson could be:\n"
+                        "- A vector lesson, e.g. \"Oral Vector 2\", \"Urethral Vector 1\"\n"
+                        "- A themed training, e.g. 'Themed Training \"Female Sexuality\"', "
+                        "'Themed Training \"Combinations of Vectors\"'\n"
+                        "- An additional/supplementary lesson\n"
+                        "- Any other type of lecture\n\n"
+                        "Use these vector name translations when applicable:\n"
+                        "- звуковой вектор → Auditory Vector\n"
+                        "- зрительный вектор → Visual Vector\n"
+                        "- кожный вектор → Dermal Vector\n"
+                        "- анальный вектор → Anal Vector\n"
+                        "- уретральный вектор → Urethral Vector\n"
+                        "- оральный вектор → Oral Vector\n"
+                        "- мышечный вектор → Muscular Vector\n"
+                        "- обонятельный вектор → Olfactory Vector\n"
+                        "- тематическое занятие / ТЗ → Themed Training\n\n"
+                        "Return JSON with exactly these keys:\n"
+                        '- "title": the lesson title in English, e.g. "Urethral Vector 1" '
+                        'or \'Themed Training "Female Sexuality"\' or "Additional Lesson 3". '
+                        "Include the lesson number if present.\n"
+                        '- "date": the lecture date in format "Month day, year", '
+                        'e.g. "March 25, 2026"\n'
+                        '- "part": "Part 1" or "Part 2" etc.\n\n'
+                        f"TEXT:\n{preview}"
+                    ),
+                }
+            ],
+        )
+
+        raw = response.content[0].text.strip()
+        # Strip markdown code fences if present
+        if raw.startswith("```"):
+            raw = re.sub(r"^```(?:json)?\s*", "", raw)
+            raw = re.sub(r"\s*```$", "", raw)
+        result = json.loads(raw)
+
+        if all(k in result for k in ("title", "date", "part")):
+            logger.info(
+                f"Extracted header: {result['title']} | {result['date']} | {result['part']}"
+            )
+            return result
+        else:
+            logger.warning(f"Header extraction missing keys: {result}")
+            return None
+
+    except Exception as e:
+        logger.warning(f"Header extraction failed, skipping header: {e}")
+        return None
+
+
 def chunk_text(text: str, chunk_size_words: int = 1500) -> list[str]:
     """
     Split text into chunks at paragraph boundaries, respecting approximate word count.
