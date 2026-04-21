@@ -19,7 +19,7 @@ from telegram.ext import (
     filters,
 )
 
-from translator import translate_and_review, extract_header_info
+from translator import translate_and_review, extract_header_info, strip_source_header
 import anthropic
 from assembler import (
     extract_text_from_docx,
@@ -106,10 +106,16 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
             word_count = len(russian_text.split())
             logger.info(f"Extracted {word_count} words from {filename}")
 
+            # Extract header info first so we can strip those lines before translation
+            # (otherwise the AI translates them and they duplicate the programmatic header)
+            header_client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+            header_info = extract_header_info(header_client, russian_text, config.MODEL)
+            body_text = strip_source_header(russian_text, header_info)
+
             # Translate + QA
             logger.info("Starting translation pipeline...")
             translated_text = translate_and_review(
-                text=russian_text,
+                text=body_text,
                 anthropic_api_key=config.ANTHROPIC_API_KEY,
                 model=config.MODEL,
                 translation_prompt=config.TRANSLATION_SYSTEM_PROMPT,
@@ -118,10 +124,6 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 use_batch=config.USE_BATCH_API,
                 batch_timeout=config.BATCH_TIMEOUT,
             )
-
-            # Extract header info from Russian source text
-            header_client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
-            header_info = extract_header_info(header_client, russian_text, config.MODEL)
 
             # Build output .docx
             output_filename = generate_output_filename(filename)
@@ -201,8 +203,13 @@ async def cmd_retry(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await file.download_to_drive(str(input_path))
 
             russian_text = extract_text_from_docx(input_path)
+
+            header_client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+            header_info = extract_header_info(header_client, russian_text, config.MODEL)
+            body_text = strip_source_header(russian_text, header_info)
+
             translated_text = translate_and_review(
-                text=russian_text,
+                text=body_text,
                 anthropic_api_key=config.ANTHROPIC_API_KEY,
                 model=config.MODEL,
                 translation_prompt=config.TRANSLATION_SYSTEM_PROMPT,
@@ -211,9 +218,6 @@ async def cmd_retry(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 use_batch=config.USE_BATCH_API,
                 batch_timeout=config.BATCH_TIMEOUT,
             )
-
-            header_client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
-            header_info = extract_header_info(header_client, russian_text, config.MODEL)
 
             output_filename = generate_output_filename(filename)
             output_path = Path(tmpdir) / output_filename
@@ -269,8 +273,13 @@ async def cmd_translate_file(update: Update, context: ContextTypes.DEFAULT_TYPE)
             await file.download_to_drive(str(input_path))
 
             russian_text = extract_text_from_docx(input_path)
+
+            header_client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+            header_info = extract_header_info(header_client, russian_text, config.MODEL)
+            body_text = strip_source_header(russian_text, header_info)
+
             translated_text = translate_and_review(
-                text=russian_text,
+                text=body_text,
                 anthropic_api_key=config.ANTHROPIC_API_KEY,
                 model=config.MODEL,
                 translation_prompt=config.TRANSLATION_SYSTEM_PROMPT,
@@ -279,9 +288,6 @@ async def cmd_translate_file(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 use_batch=config.USE_BATCH_API,
                 batch_timeout=config.BATCH_TIMEOUT,
             )
-
-            header_client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
-            header_info = extract_header_info(header_client, russian_text, config.MODEL)
 
             output_filename = generate_output_filename(filename)
             output_path = Path(tmpdir) / output_filename

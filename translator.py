@@ -66,7 +66,11 @@ def extract_header_info(
                         "Include the lesson number if present.\n"
                         '- "date": the lecture date in format "Month day, year", '
                         'e.g. "March 25, 2026"\n'
-                        '- "part": "Part 1" or "Part 2" etc.\n\n'
+                        '- "part": "Part 1" or "Part 2" etc.\n'
+                        '- "header_paragraphs": integer count of non-empty paragraphs '
+                        "at the very start of the text that make up the header block "
+                        "(title + date + part lines, before the lecture content begins). "
+                        "Typically 2-5.\n\n"
                         f"TEXT:\n{preview}"
                     ),
                 }
@@ -80,9 +84,10 @@ def extract_header_info(
             raw = re.sub(r"\s*```$", "", raw)
         result = json.loads(raw)
 
-        if all(k in result for k in ("title", "date", "part")):
+        if all(k in result for k in ("title", "date", "part", "header_paragraphs")):
             logger.info(
-                f"Extracted header: {result['title']} | {result['date']} | {result['part']}"
+                f"Extracted header: {result['title']} | {result['date']} | {result['part']} "
+                f"({result['header_paragraphs']} source paragraphs)"
             )
             return result
         else:
@@ -92,6 +97,28 @@ def extract_header_info(
     except Exception as e:
         logger.warning(f"Header extraction failed, skipping header: {e}")
         return None
+
+
+def strip_source_header(text: str, header_info: dict | None) -> str:
+    """Drop the first N non-empty paragraphs (the header) from the source text,
+    so they aren't translated and duplicated below the programmatic header."""
+    if not header_info:
+        return text
+    n = header_info.get("header_paragraphs", 0)
+    if not isinstance(n, int) or n < 1:
+        return text
+
+    lines = text.split("\n")
+    non_empty_seen = 0
+    idx = 0
+    while idx < len(lines) and non_empty_seen < n:
+        if lines[idx].strip():
+            non_empty_seen += 1
+        idx += 1
+    # Also consume trailing blank lines immediately after the header
+    while idx < len(lines) and not lines[idx].strip():
+        idx += 1
+    return "\n".join(lines[idx:])
 
 
 def chunk_text(text: str, chunk_size_words: int = 1500) -> list[str]:
